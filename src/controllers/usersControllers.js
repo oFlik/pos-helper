@@ -1,5 +1,5 @@
 const pool = require('../config/database')
-const bcrypt = require('bcrypt')
+const md5 = require('md5')
 const jwt = require('jsonwebtoken')
 
 const create = async (req, res) => {
@@ -17,7 +17,8 @@ const create = async (req, res) => {
       return res.status(400).json({ mensagem: 'Este email já está em uso!' })
     }
 
-    const senhaCrypt = await bcrypt.hash(senha, 10)
+    const senhaCrypt = md5(senha, process.env.SALT_KEY)
+    console.log(senhaCrypt);
 
     const { rows: cadastro } = await pool.query(
       'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *;',
@@ -47,9 +48,7 @@ const login = async (req, res) => {
       return res.status(403).send({ mensagem: 'Email incorreto.' })
     }
 
-    const senhaValida = await bcrypt.compare(senha, usuario.senha)
-
-    if (!senhaValida) {
+    if (usuario.senha != md5(senha, process.env.SALT_KEY)) {
       return res.status(403).send({ mensagem: 'Senha incorreta' })
     }
 
