@@ -1,6 +1,6 @@
 const pool = require('../config/database')
 const md5 = require('md5')
-const jwt = require('jsonwebtoken')
+const emailValidator = require('deep-email-validator')
 
 const create = async (req, res) => {
   const { nome, email, senha } = req.body
@@ -10,6 +10,12 @@ const create = async (req, res) => {
   }
 
   try {
+    const { valid } = await emailValidator.validate(email)
+
+    if (!valid) {
+      return res.status(400).json({ mensagem: 'Insira um email válido!' })
+    }
+
     let { rows: emailsExistentes } = await pool.query('SELECT email FROM usuarios;')
     emailsExistentes = emailsExistentes.map((a) => a.email)
 
@@ -18,7 +24,7 @@ const create = async (req, res) => {
     }
 
     const senhaCrypt = md5(senha, process.env.SALT_KEY)
-    console.log(senhaCrypt);
+    console.log(senhaCrypt)
 
     const { rows: cadastro } = await pool.query(
       'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *;',
